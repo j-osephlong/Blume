@@ -10,6 +10,10 @@ class Blume
     {
         Grid G = new Grid(20, 20, 2, new Unit ('\u2593', null));
 
+        // FrameTools.line(G, 8, 3, 0, 0);
+        KeyboardInput.Read();
+        KeyboardInput.Print();
+
         // double lumConstant = 0.75;
 
         // for (int y = 0; y < G.height; y++)
@@ -22,7 +26,7 @@ class Blume
         //     } 
         // Renderer.Render(new Frame(G));       
          
-        Renderer.Render(FrameTools.ReadImageBlocks("test.jpg", Console.WindowWidth, Console.WindowHeight));
+        // Renderer.Render(FrameTools.ReadImageBlocks("test.jpg", Console.WindowWidth, Console.WindowHeight));
 
     }
 }

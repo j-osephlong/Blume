@@ -60,14 +60,33 @@ namespace Frames
                     rot = DY;
             }
             
-            xDir = x1 > x2 ? 1 : -1;
-            yDir = y1 > y2 ? 1 : -1;
+            xDir = x1 < x2 ? 1 : -1;
+            yDir = y1 < y2 ? 1 : -1;
 
-            for (int i = 0; i < 
-                (Direction == 'Y' ? Math.Ceiling(DY / rot) : Math.Ceiling(DX / rot));
+            double overflow = 0;
+            int curX = x1;
+            int curY = y1;
+
+            for (int i = 0; i <= 
+                (Direction == 'Y' ? DX : DY);
                 i++)
             {
-                Console.WriteLine("HI"+(y1 + yDir*i));
+                overflow += (rot - (int)rot);
+                for (int j = 0; j < (int)rot; j++)
+                {
+                    Console.WriteLine("Point " + curX + "-" + (curY + yDir*i));
+                    if (curX >= x2)
+                        break;
+                    curX+=xDir;
+                    if (overflow >= 0.98)
+                    {
+                        Console.WriteLine("Point " + curX + "-" + (curY + yDir*i));
+                        if (curX >= x2)
+                            break;
+                        curX+=xDir;
+                        overflow-=((int)overflow);
+                    }
+                }
             }
         }
 

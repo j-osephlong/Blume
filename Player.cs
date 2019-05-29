@@ -1,3 +1,4 @@
+using System;
 using Map;
 
 class Player
@@ -32,4 +33,6 @@ class Player
         this.xPos = xPos;
         this.yPos = yPos;
     }
+
+
 }
