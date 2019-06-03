@@ -39,7 +39,14 @@ class Renderer
     {
         foreach (var change in FrameTools.Contrast(PrevFrame, F))
         {
-            Console.WriteLine(change.Item1 + "-" + change.Item2);
+            // Console.WriteLine(change.Item1 + "-" + change.Item2);
+            Console.SetCursorPosition(change.Item1, change.Item2);
+
+            if (F.Product.posGrid[0, change.Item2, change.Item1].ColorValue == null)
+                Console.Write(F.Product.posGrid[0, change.Item2, change.Item1].Character);
+            else
+                Console.Write($"{(F.Product.posGrid[0, change.Item2, change.Item1].Character + "").Pastel(F.Product.posGrid[0, change.Item2, change.Item1].ColorValue ?? default(Color))}");
+            
         }
     }
 }

@@ -9,11 +9,16 @@ class Player
     private Grid G;
     private Unit playerUnit;
 
+    private int dX, dY;
+
     public Player (Grid G, Unit playerUnit)
     {
         this.G = G; //not a clone
         this.playerUnit = playerUnit;
         playerUnit.Flags.Add("no_overwrite");
+
+        dX = 1;
+        dY = 1;
     }
 
     public void Place (int xPos, int yPos, int layer)
@@ -25,14 +30,36 @@ class Player
         G.posGrid[layer, this.yPos, this.xPos] = playerUnit;
     }
 
-    public void Move (int xPos, int yPos)
+    public void Move (int deltaX = 0, int deltaY = 0)
     {
-        G.posGrid[this.layer, yPos, xPos] = playerUnit;
+        G.posGrid[this.layer, this.yPos + deltaY, this.xPos + deltaX] = playerUnit;
         G.posGrid[this.layer, this.yPos, this.xPos] = null;
 
-        this.xPos = xPos;
-        this.yPos = yPos;
+        this.xPos += deltaX;
+        this.yPos += deltaY;
     }
 
+    public void PlayBall ()
+    {
+        if (KeyboardInput.IsPressed(ConsoleKey.E))
+        {
+            dX = 2;
+            dY = 2;
+        }
+        else
+        {
+            dX = 1;
+            dY = 1;
+        }
+        
+        if (KeyboardInput.IsPressed(ConsoleKey.A))
+            Move(deltaX:-1*dX);
+        if (KeyboardInput.IsPressed(ConsoleKey.D))
+            Move(deltaX:1*dX);
+        if (KeyboardInput.IsPressed(ConsoleKey.W))
+            Move(deltaY:-1*dY);
+        if (KeyboardInput.IsPressed(ConsoleKey.S))
+            Move(deltaY:1*dY);
+    }
 
 }

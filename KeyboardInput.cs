@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 static class KeyboardInput
 {
-    private static List<Tuple<char, ConsoleModifiers, bool>> CurrentKeys = new List<Tuple<char, ConsoleModifiers, bool>> ();
-    private static List<char> Toggleables = new List<char> ();
+    private static List<Tuple<ConsoleKey, ConsoleModifiers, bool>> CurrentKeys = new List<Tuple<ConsoleKey, ConsoleModifiers, bool>> ();
+    public static List<ConsoleKey> Toggleables = new List<ConsoleKey> ();
 
     public static void Read()
     {
         for (int x = 0; x < CurrentKeys.Count; x++)
-            if (Toggleables.Contains(CurrentKeys[x].Item1))
+            if (!Toggleables.Contains(CurrentKeys[x].Item1))
                 CurrentKeys.RemoveAt(x);
 
         while (Console.KeyAvailable)
@@ -18,15 +18,28 @@ static class KeyboardInput
             bool alreadyLogged = false;
             foreach (var key in CurrentKeys)
             {
-                if (key.Item1 == KeyPress.KeyChar && key.Item2 == KeyPress.Modifiers)
+                if (key.Item1 == KeyPress.Key && key.Item2 == KeyPress.Modifiers)
                     alreadyLogged = true;
             }
             if (!alreadyLogged)
-                if (Toggleables.Contains(KeyPress.KeyChar))
-                    CurrentKeys.Add(Tuple.Create(KeyPress.KeyChar, KeyPress.Modifiers, true));
+                if (Toggleables.Contains(KeyPress.Key))
+                    CurrentKeys.Add(Tuple.Create(KeyPress.Key, KeyPress.Modifiers, true));
                 else
-                    CurrentKeys.Add(Tuple.Create(KeyPress.KeyChar, KeyPress.Modifiers, false));
+                    CurrentKeys.Add(Tuple.Create(KeyPress.Key, KeyPress.Modifiers, false));
+            if (alreadyLogged && Toggleables.Contains(KeyPress.Key))
+                for (int x = 0; x < CurrentKeys.Count; x++)
+                    if (Toggleables.Contains(CurrentKeys[x].Item1))
+                        CurrentKeys.RemoveAt(x);
         }
+    }
+
+    public static bool IsPressed (ConsoleKey Key, ConsoleModifiers Mod = 0)
+    {
+        foreach (Tuple<ConsoleKey, ConsoleModifiers, bool> KeyPress in CurrentKeys)
+            if (KeyPress.Item1 == Key && KeyPress.Item2 == Mod)
+                return true;
+
+        return false;
     }
 
     public static void Print ()

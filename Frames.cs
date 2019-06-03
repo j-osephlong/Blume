@@ -36,60 +36,6 @@ namespace Frames
             return product;
         }
 
-        public static void line (this Grid G, int x1, int y1, int x2, int y2)
-        {
-            const int Layer = 0;
-            int DX = Math.Abs(x1 - x2);
-            int DY = Math.Abs(y1 - y2);
-            char Direction;
-            double rot = (double)DY/DX;
-            int xDir;
-            int yDir;
-
-            if (rot < 1)
-            {
-                Direction = 'X';
-                rot = 1/rot;
-                if (double.IsInfinity(rot))
-                    rot = DX;
-            } 
-            else 
-            {
-                Direction = 'Y';
-                if (double.IsInfinity(rot))
-                    rot = DY;
-            }
-            
-            xDir = x1 < x2 ? 1 : -1;
-            yDir = y1 < y2 ? 1 : -1;
-
-            double overflow = 0;
-            int curX = x1;
-            int curY = y1;
-
-            for (int i = 0; i <= 
-                (Direction == 'Y' ? DX : DY);
-                i++)
-            {
-                overflow += (rot - (int)rot);
-                for (int j = 0; j < (int)rot; j++)
-                {
-                    Console.WriteLine("Point " + curX + "-" + (curY + yDir*i));
-                    if (curX >= x2)
-                        break;
-                    curX+=xDir;
-                    if (overflow >= 0.98)
-                    {
-                        Console.WriteLine("Point " + curX + "-" + (curY + yDir*i));
-                        if (curX >= x2)
-                            break;
-                        curX+=xDir;
-                        overflow-=((int)overflow);
-                    }
-                }
-            }
-        }
-
         public static List<Tuple<int, int>> Contrast (Frame F1, Frame F2)
         {
             //only contrasts flattned Frames
@@ -142,6 +88,51 @@ namespace Frames
                 // Console.WriteLine();
             }
             return new Frame(product);
+        }
+
+        public static void Line (Grid G, int x1, int y1, int x2, int y2)
+        {
+            int DeltaX = Math.Abs(x1-x2);
+            int DeltaY = Math.Abs(y1-y2);
+
+            double ROC = DeltaX < DeltaY ? (double)DeltaY/DeltaX : (double)DeltaX/DeltaY;
+            char Dir = DeltaX < DeltaY ? 'Y' : 'X';
+
+            int XDir = x1 < x2 ? 1 : (x1 == x2 ? 0 : -1);
+            int YDir = y1 < y2 ? 1 : (y1 == y2 ? 0 : -1);
+
+            int curX = x1; int curY = y1;
+            
+            double overflow = 0;
+            while (curX != x2 && curY != y2)
+            {
+                if (Dir == 'Y')
+                {
+                    overflow += (ROC - (int)ROC);
+                    for (int i = 1; i <= ((int)ROC + (int)overflow); i++)
+                    {
+                        G.posGrid[0, curY, curX].Character = 'O';
+                        curY+=YDir;
+                    }
+                    if (overflow >= 1)
+                        overflow = overflow - (int)overflow;
+                    curX+=XDir;
+                }
+
+                if (Dir == 'X')
+                {
+                    overflow += (ROC - (int)ROC);
+                    for (int i = 1; i <= ((int)ROC + (int)overflow); i++)
+                    {
+                        G.posGrid[0, curY, curX].Character = 'O';
+                        curX+=XDir;
+                    }
+                    if (overflow >= 1)
+                        overflow = overflow - (int)overflow;
+                    curY+=YDir;
+                }
+            }
+            G.posGrid[0, curY, curX].Character = 'O';            
         }
 
     }
