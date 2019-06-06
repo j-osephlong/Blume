@@ -1,5 +1,6 @@
 using System;
 using Map;
+using System.Drawing;
 
 class Player
 {
@@ -16,6 +17,7 @@ class Player
         this.G = G; //not a clone
         this.playerUnit = playerUnit;
         playerUnit.Flags.Add("no_overwrite");
+        playerUnit.Flags.Add("wall");
 
         dX = 1;
         dY = 1;
@@ -60,6 +62,20 @@ class Player
             Move(deltaY:-1*dY);
         if (KeyboardInput.IsPressed(ConsoleKey.S))
             Move(deltaY:1*dY);
+
+        if (KeyboardInput.IsPressed(ConsoleKey.P))
+        {
+            Unit newUnit = new Unit ('X', Color.Brown);
+            newUnit.Flags.Add("wall");
+            G.posGrid[0, this.yPos, this.xPos] = newUnit;
+        }
+
+        if (KeyboardInput.IsPressed(ConsoleKey.O))
+        {
+            Unit newUnit = new Unit ('\u2593', Color.Brown);
+            newUnit.Flags.Add("luminant");
+            G.posGrid[0, this.yPos, this.xPos] = newUnit;
+        }
     }
 
 }

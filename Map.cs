@@ -20,7 +20,11 @@ namespace Map
 
         public object Clone ()
         {
-            return this.MemberwiseClone();
+            Unit C = (Unit)this.MemberwiseClone();
+            C.Flags = new List<string>();
+            foreach(string flag in Flags)
+                C.Flags.Add(flag);
+            return (object)C;
         }
     }
 
