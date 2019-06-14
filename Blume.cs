@@ -6,31 +6,40 @@ using Frames;
 
 class Blume 
 {   
+
+    public static void PlayGround ()
+    {
+
+        Console.WriteLine("End of play time.");
+        Console.Read();
+        Console.Read();
+    }
+
     public static void Main (string [] args)
     {
-        Grid G = new Grid(50, 50, 2, new Unit ('\u2593', Color.FromArgb(124, 44, 56)));
-        G.posGrid[0, 10, 10].Flags.Add("luminant");
-        G.posGrid[0, 20, 30].Flags.Add("luminant");
-        G.posGrid[0, 5, 5].Flags.Add("wall");
-        G.posGrid[0, 5, 5].Character = 'X';
-        G.posGrid[0, 6, 5].Character = 'X';
-        G.posGrid[0, 7, 5].Character = 'X';
-        G.posGrid[0, 6, 5].Flags.Add("wall");
-        G.posGrid[0, 7, 5].Flags.Add("wall");
-        // FrameTools.Luminate(G);
-        // Console.Read();
-        // Console.Read();
+        PlayGround();
+
+        Grid G = new Grid(50, 30, 2, new Unit ('\u2593', Color.FromArgb(124, 44, 56)));
+        Grid.SetLayer(G, 0, 0, FrameTools.ReadImageBlocks("test.jpg", 50, 50));
 
         // for (int y = 0; y < G.height; y++)
         // {
         //     for (int x = 0; x < G.width; x++)
         //     {
         //         Frame F = new Frame(G);
-        //         FrameTools.Line(F.Product, x, y, G.width/2, G.height/2);
+        //         var Path = FrameTools.Line(F.Product, x, y, G.width/2, G.height/2);
+        //         foreach (var S in Path)
+        //         {
+        //             F.Product.posGrid[0, S.Item2, S.Item1].Character = 'X';
+        //         }
         //         Renderer.Render(F);
         //         Console.Read();
         //     }
         // }
+        // G.posGrid[0, 10, 10].Flags.Add("luminant");
+        G.posGrid[0, 20, 30].Flags.Add("luminant");
+
+        
         Player P = new Player(G, new Unit('X', Color.Aqua));
 
         P.Place(10, 10, 1);

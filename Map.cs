@@ -74,5 +74,16 @@ namespace Map
 
             return (object)clone;
         }
+
+        public static void SetLayer (Grid G, int layer, int xOffset, Grid Slide)
+        {
+            for (int y = 0; y < (G.height <= Slide.height ? G.height : Slide.height); y++)
+            {
+                for (int x = 0; x < (G.width <= Slide.width ? G.width : Slide.width) - xOffset; x++)
+                {
+                    G.posGrid[layer, y, x + xOffset] = Slide.posGrid[layer, y, x];
+                }
+            }
+        }
     }
 }

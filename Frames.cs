@@ -51,7 +51,7 @@ namespace Frames
             return changes;
         }
 
-        public static Frame ReadImageBlocks (string path, int w, int h)
+        public static Grid ReadImageBlocks (string path, int w, int h)
         {
             Grid product = new Grid(w, h, 1, new Unit('\u2593'));
 
@@ -84,11 +84,12 @@ namespace Frames
                     AvgB = AvgB/pixelCount;
                     // Console.WriteLine(AvgR+"-"+AvgG+"-"+AvgB);
                     product.posGrid[0, bY, bX].ColorValue = Color.FromArgb(AvgR, AvgG, AvgB);
+                    // product.posGrid[0, bY, bX].Flags.Add("luminant");
                     // Console.Write($"{"\u2593\u2593".Pastel(Color.FromArgb(AvgR, AvgG, AvgB))}");
                 }
                 // Console.WriteLine();
             }
-            return new Frame(product);
+            return product;
         }
 
         public static List<Tuple<int, int>> Line (Grid G, int x1, int y1, int x2, int y2)
@@ -139,21 +140,21 @@ namespace Frames
                 }
             }
 
-            if (x1 == x2)
-            {
-                Path.Clear();
-                for (int y = y1; y <= y2; y++)
-                    Path.Add(Tuple.Create(x1, y));
-                return Path;                
-            } 
-            else if (y1 == y2)
-            {
-                Path.Clear();
-                for (int x = x1; x <= x2; x++)
-                    Path.Add(Tuple.Create(x, y1));
-                return Path;
-            }
-            else
+            // if (x1 == x2)
+            // {
+            //     Path.Clear();
+            //     for (int y = y1; y <= y2; y++)
+            //         Path.Add(Tuple.Create(x1, y));
+            //     return Path;                
+            // } 
+            // else if (y1 == y2)
+            // {
+            //     Path.Clear();
+            //     for (int x = x1; x <= x2; x++)
+            //         Path.Add(Tuple.Create(x, y1));
+            //     return Path;
+            // }
+            // else
                 Path.Add(Tuple.Create(curX, curY));
             // G.posGrid[0, curY, curX].Character = 'O';   
             Path.Reverse();
