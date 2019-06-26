@@ -6,43 +6,33 @@ using Frames;
 
 class Blume 
 {   
+    public static int WIDTH = 160/2;
+    public static int HEIGHT = 80/2;
 
     public static void PlayGround ()
     {
+        //Test, debug code, kept separate from the main function for readability purposes
 
-        Console.WriteLine("End of play time.");
+        // Console.SetBufferSize(150, 150);
+        Console.SetWindowSize(WIDTH, HEIGHT + 1);
+        // Console.SetBufferSize(80, 40 + 1);
+
         Console.Read();
         Console.Read();
     }
 
     public static void Main (string [] args)
     {
-        PlayGround();
+        // PlayGround();
 
-        Grid G = new Grid(50, 30, 2, new Unit ('\u2593', Color.FromArgb(124, 44, 56)));
-        Grid.SetLayer(G, 0, 0, FrameTools.ReadImageBlocks("test.jpg", 50, 50));
-
-        // for (int y = 0; y < G.height; y++)
-        // {
-        //     for (int x = 0; x < G.width; x++)
-        //     {
-        //         Frame F = new Frame(G);
-        //         var Path = FrameTools.Line(F.Product, x, y, G.width/2, G.height/2);
-        //         foreach (var S in Path)
-        //         {
-        //             F.Product.posGrid[0, S.Item2, S.Item1].Character = 'X';
-        //         }
-        //         Renderer.Render(F);
-        //         Console.Read();
-        //     }
-        // }
-        // G.posGrid[0, 10, 10].Flags.Add("luminant");
-        G.posGrid[0, 20, 30].Flags.Add("luminant");
-
+        Grid G = new Grid(WIDTH, HEIGHT, 4, new Unit ('\u2593', Color.FromArgb(124, 44, 56)));
+        Grid.SetLayer(G, 0, 0, 0, FrameTools.ReadImageBlocks("1.jpg", G.width, G.height));
+        Grid.SetLayer(G, 2, 0, 0, FrameTools.ReadImageBlocks("2.png", G.width, G.height));
         
         Player P = new Player(G, new Unit('X', Color.Aqua));
 
         P.Place(10, 10, 1);
+        G.posGrid[1, 10, 10].SetSprite(new Grid(5, 5, 1, new Unit ('Q', Color.BlanchedAlmond)));
 
         KeyboardInput.Toggleables.Add(ConsoleKey.E);
 
@@ -50,13 +40,7 @@ class Blume
         {
             KeyboardInput.Read();
             P.PlayBall();
-            Renderer.Render(new Frame(G));
+            Renderer.Render(new Frame(G, Lum:false));
         }
-
-        
-        // Renderer.Render(new Frame(G));       
-         
-        // Renderer.Render(FrameTools.ReadImageBlocks("test.jpg", Console.WindowWidth, Console.WindowHeight));
-
     }
 }

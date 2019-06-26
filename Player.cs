@@ -43,6 +43,10 @@ class Player
 
     public void PlayBall ()
     {
+        /*
+            Function to be run each main loop cycle for player.
+            */
+            
         if (KeyboardInput.IsPressed(ConsoleKey.E))
         {
             dX = 2;
@@ -72,9 +76,9 @@ class Player
 
         if (KeyboardInput.IsPressed(ConsoleKey.O))
         {
-            Unit newUnit = new Unit ('\u2593', Color.Brown);
-            newUnit.Flags.Add("luminant");
-            G.posGrid[0, this.yPos, this.xPos] = newUnit;
+            // Unit newUnit = new Unit ('\u2593', Color.Brown);
+            // newUnit.Flags.Add("luminant");
+            G.posGrid[0, this.yPos, this.xPos].Flags.Add("luminant");
         }
     }
 

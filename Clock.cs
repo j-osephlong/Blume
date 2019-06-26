@@ -3,6 +3,11 @@ using System.Diagnostics;
 
 static class Clock
 {
+    /*
+        The clock is use to keep time in intervals for subscribing objects.
+        A class may subscribe to the clock interval 1/4 second for example, to be run every 1/4 second.
+        */
+
     private static Stopwatch SW = new Stopwatch();
     private static int Threshold = 10;  
     public static long Now = 0;
@@ -25,15 +30,11 @@ static class Clock
             return;
             
         if (Now % 1000 == 0 && OneSecondElapsed != null)
-        {
             OneSecondElapsed (Now);
-        }
         else if (Now % 500 == 0 && HalfSecondElapsed != null)
             HalfSecondElapsed (Now);
         else if (Now % 250 == 0 && QuarterSecondElapsed != null)
-        {
             QuarterSecondElapsed (Now);
-        }
     }
 
 }

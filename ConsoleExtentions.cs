@@ -1,3 +1,7 @@
+/*
+    Not written by me. Used for RGB console output. Can be found on github by searching Pastel C#.
+    */
+
 namespace Pastel
 {
     using System;

@@ -7,15 +7,31 @@ namespace Map
 {
     class Unit : ICloneable
     {
+        /*
+            A unit is a single point on a grid, with it's own Flag, Sprite, character, and color 
+            information.
+            */
+
         public List<string> Flags;
         public char Character {get; set;}
         public Color? ColorValue {get; set;}
+        public Grid Sprite {get; private set;}
+        public bool HasSprite {get; private set;}
 
         public Unit (char Character, Color? ColorValue = null)
         {
             this.Character = Character;
             this.ColorValue = ColorValue;
             this.Flags = new List<string>();
+
+            this.HasSprite = false;
+            this.Sprite = null;
+        }
+
+        public void SetSprite (Grid S)
+        {
+            HasSprite = true;
+            Sprite = (Grid)S.Clone();
         }
 
         public object Clone ()
@@ -75,13 +91,13 @@ namespace Map
             return (object)clone;
         }
 
-        public static void SetLayer (Grid G, int layer, int xOffset, Grid Slide)
+        public static void SetLayer (Grid G, int layer, int xOffset, int yOffset, Grid Slide)
         {
-            for (int y = 0; y < (G.height <= Slide.height ? G.height : Slide.height); y++)
+            for (int y = 0; y < (G.height <= Slide.height ? G.height : Slide.height) - yOffset; y++)
             {
                 for (int x = 0; x < (G.width <= Slide.width ? G.width : Slide.width) - xOffset; x++)
                 {
-                    G.posGrid[layer, y, x + xOffset] = Slide.posGrid[layer, y, x];
+                    G.posGrid[layer, y + yOffset, x + xOffset] = Slide.posGrid[0, y, x];
                 }
             }
         }

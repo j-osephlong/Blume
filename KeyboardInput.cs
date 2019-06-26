@@ -8,6 +8,10 @@ static class KeyboardInput
 
     public static void Read()
     {
+        /*
+            Function to be run in main loop every cycle to read key presses.
+            */
+            
         for (int x = 0; x < CurrentKeys.Count; x++)
             if (!Toggleables.Contains(CurrentKeys[x].Item1))
                 CurrentKeys.RemoveAt(x);

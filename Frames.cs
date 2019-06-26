@@ -8,16 +8,23 @@ namespace Frames
 {
     class Frame
     {
+        /*
+            A frame is wrapper for a Grid, where further graphical processing may be applied, before 
+            the frame is passed into the Renderer
+            */
+
         public Grid G;
         public Grid Product;
 
         //final step must be to flatten Grid
-        public Frame (Grid G)
+        public Frame (Grid G, bool Lum = true)
         {
             this.G = (Grid)G.Clone();
             this.Product = (Grid)G.Clone();
+            this.Product = FrameTools.ApplySprites(this.Product);
             this.Product = FrameTools.Flatten(this.Product);
-            this.Product = FrameTools.Luminate(this.Product);
+            if (Lum)
+                this.Product = FrameTools.Luminate(this.Product);
         }
     }
 
@@ -25,6 +32,10 @@ namespace Frames
     {
         public static Grid Flatten (Grid G)
         {
+            /*
+                Create a flattened, top down, 2d grid from the 3d grid passed to the frame
+                */
+
             Grid product = new Grid(G.width, G.height, 1, null);
             for (int z = G.depth - 1; z >= 0; z--)
                 for (int y = 0; y < G.height; y++)
@@ -37,8 +48,43 @@ namespace Frames
             return product;
         }
 
+        public static Grid ApplySprites (Grid G)
+        {
+            /*
+                Every unit in a grid may have a sprite attached to it, which is another grid.
+                The sprite is not applied to the grid before it is passed to a frame for the
+                purpose of preserving position data.
+                */
+
+            Grid tempG = (Grid)G.Clone();
+            for (int z = 0; z < G.depth; z++)
+                for (int y = 0; y < G.height; y++)
+                {
+                    for (int x = 0; x < G.width; x++)
+                    {
+                        if (G.posGrid[z, y, x] != null)
+                            if (G.posGrid[z, y, x].HasSprite)
+                            {
+                                for (int sy = y; sy < y + G.posGrid[z, y, x].Sprite.height; sy++)
+                                {
+                                    for (int sx = x; sx < x + G.posGrid[z, y, x].Sprite.width; sx++)
+                                    {
+                                        tempG.posGrid[z, sy, sx] = (Unit)G.posGrid[z, y, x].Sprite.posGrid[0, sy-y, sx-x].Clone();
+                                    }
+                                }
+                            }
+                    }
+                }
+
+            return tempG;
+        }
+
         public static List<Tuple<int, int>> Contrast (Frame F1, Frame F2)
         {
+            /*
+                Find all differences between two frames.
+                */
+
             //only contrasts flattned Frames
             List<Tuple<int, int>> changes = new List<Tuple<int, int>> ();
 
@@ -53,6 +99,10 @@ namespace Frames
 
         public static Grid ReadImageBlocks (string path, int w, int h)
         {
+            /*
+                Create a grid based off of a provided image file.
+                */
+
             Grid product = new Grid(w, h, 1, new Unit('\u2593'));
 
             Bitmap image = new Bitmap(path);
@@ -66,6 +116,7 @@ namespace Frames
                     int AvgR = 0;
                     int AvgG = 0;
                     int AvgB = 0;
+                    int AvgA = 0;
                     int pixelCount = 0;
                     for (int y = (hR * bY); y < hR + (hR * bY); y++)
                         for (int x = (wR * bX); x < wR + (wR * bX); x++)
@@ -76,14 +127,19 @@ namespace Frames
                             AvgR += pixel.R;
                             AvgG += pixel.G;
                             AvgB += pixel.B;
+                            AvgA += pixel.A;
                             pixelCount++;
                         }
 
                     AvgR = AvgR/pixelCount;
                     AvgG = AvgG/pixelCount;
                     AvgB = AvgB/pixelCount;
+                    AvgA = AvgA/pixelCount;
                     // Console.WriteLine(AvgR+"-"+AvgG+"-"+AvgB);
-                    product.posGrid[0, bY, bX].ColorValue = Color.FromArgb(AvgR, AvgG, AvgB);
+                    if (AvgA >225)
+                        product.posGrid[0, bY, bX].ColorValue = Color.FromArgb(AvgR, AvgG, AvgB);
+                    else    
+                        product.posGrid[0, bY, bX] = null;
                     // product.posGrid[0, bY, bX].Flags.Add("luminant");
                     // Console.Write($"{"\u2593\u2593".Pastel(Color.FromArgb(AvgR, AvgG, AvgB))}");
                 }
@@ -92,8 +148,61 @@ namespace Frames
             return product;
         }
 
+        public static void DrawCircle(this Grid G, int centerX, int centerY, int r)
+        {
+            /*
+                Non functional and temporary.
+                */
+            int d = (5 - r * 4) / 4;
+            int x = 0;
+            int y = r;
+            // Grid postG = (Grid)G.Clone();
+ 
+            int radius = r; 
+            while (radius >= 0)
+            {
+                // Console.WriteLine(radius);
+                // Console.Read();
+                // Console.Read();
+                // G = (Grid)postG.Clone();
+                do
+                {
+                    // ensure index is in range before setting (depends on your image implementation)
+                    // in this case we check if the pixel location is within the bounds of the image before setting the pixel
+                    if (centerX + x >= 0 && centerX + x <= G.width - 1 && centerY + y >= 0 && centerY + y <= G.height - 1) G.posGrid[0, centerY + y, centerX + x].Character = 'U';
+                    if (centerX + x >= 0 && centerX + x <= G.width - 1 && centerY - y >= 0 && centerY - y <= G.height - 1) G.posGrid[0, centerY - y, centerX + x].Character = 'U';
+                    if (centerX - x >= 0 && centerX - x <= G.width - 1 && centerY + y >= 0 && centerY + y <= G.height - 1) G.posGrid[0, centerY + y, centerX - x].Character = 'U';
+                    if (centerX - x >= 0 && centerX - x <= G.width - 1 && centerY - y >= 0 && centerY - y <= G.height - 1) G.posGrid[0, centerY - y, centerX - x].Character = 'U';
+                    if (centerX + y >= 0 && centerX + y <= G.width - 1 && centerY + x >= 0 && centerY + x <= G.height - 1) G.posGrid[0, centerY + x, centerX + y].Character = 'U';
+                    if (centerX + y >= 0 && centerX + y <= G.width - 1 && centerY - x >= 0 && centerY - x <= G.height - 1) G.posGrid[0, centerY - x, centerX + y].Character = 'U';
+                    if (centerX - y >= 0 && centerX - y <= G.width - 1 && centerY + x >= 0 && centerY + x <= G.height - 1) G.posGrid[0, centerY + x, centerX - y].Character = 'U';
+                    if (centerX - y >= 0 && centerX - y <= G.width - 1 && centerY - x >= 0 && centerY - x <= G.height - 1) G.posGrid[0, centerY - x, centerX - y].Character = 'U';
+                    if (d < 0)
+                    {
+                        d += 2 * x + 1;
+                    }
+                    else
+                    {
+                        d += 2 * (x - y) + 1;
+                        y--;
+                    }
+                    x++;
+                } while (x <= y);
+                radius--;
+                d = (5 - radius * 4) / 4;
+                x = 0;
+                y = radius;
+                Console.Read();
+                Renderer.Render (new Frame (G));
+            }
+        }
+
         public static List<Tuple<int, int>> Line (Grid G, int x1, int y1, int x2, int y2)
         {
+            /*
+                Draw a line between two points and create a list of coordinates for said line.
+                */
+
             List<Tuple<int, int>> Path = new List<Tuple<int, int>> ();
             int DeltaX = Math.Abs(x1-x2);
             int DeltaY = Math.Abs(y1-y2);
@@ -140,21 +249,21 @@ namespace Frames
                 }
             }
 
-            // if (x1 == x2)
-            // {
-            //     Path.Clear();
-            //     for (int y = y1; y <= y2; y++)
-            //         Path.Add(Tuple.Create(x1, y));
-            //     return Path;                
-            // } 
-            // else if (y1 == y2)
-            // {
-            //     Path.Clear();
-            //     for (int x = x1; x <= x2; x++)
-            //         Path.Add(Tuple.Create(x, y1));
-            //     return Path;
-            // }
-            // else
+            if (x1 == x2)
+            {
+                Path.Clear();
+                for (int y = (y1 < y2 ? y1 : y2);  (y1 < y2 ? y <= y2 : y >= y1); y+= (y1 < y2 ? 1 : -1))
+                    Path.Add(Tuple.Create(x1, y));
+                return Path;                
+            } 
+            else if (y1 == y2)
+            {
+                Path.Clear();
+                for (int x = (x1 < x2 ? x1 : x2); (x1 < x2 ? x <= x2 : x >= x1); x+= (x1 < x2 ? 1 : -1))
+                    Path.Add(Tuple.Create(x, y1));
+                return Path;
+            }
+            else
                 Path.Add(Tuple.Create(curX, curY));
             // G.posGrid[0, curY, curX].Character = 'O';   
             Path.Reverse();
@@ -163,6 +272,10 @@ namespace Frames
 
         public static Grid Luminate (Grid G)
         {
+            /*
+                Apply lumination effect, inefficiently.
+                */
+                
             double [,] lumMap = new double [G.height, G.width];
             double lumConstant = 0.90;        
 
@@ -203,11 +316,14 @@ namespace Frames
             {
                 for (int x = 0; x < G.width; x++)
                 {
+                    double l = lumMap[y, x];
+                    if (l < 0.2)
+                        l = 0.2;
                     Color oldColor = G.posGrid[0, y, x].ColorValue ?? default(Color);
                     Color newColor = Color.FromArgb(
-                            (int)(oldColor.R * lumMap[y, x]),
-                            (int)(oldColor.G * lumMap[y, x]),
-                            (int)(oldColor.B * lumMap[y, x])
+                            (int)(oldColor.R * l),
+                            (int)(oldColor.G * l),
+                            (int)(oldColor.B * l)
                         );
                     G.posGrid[0, y, x].ColorValue = newColor;
                 }
