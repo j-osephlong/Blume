@@ -16,6 +16,7 @@ static class Clock
     public static event TimeIntervalMetHandler OneSecondElapsed;
     public static event TimeIntervalMetHandler HalfSecondElapsed;
     public static event TimeIntervalMetHandler QuarterSecondElapsed;
+    public static event TimeIntervalMetHandler EighthSecondElapsed;
 
     public static void Start ()
     {
@@ -28,12 +29,12 @@ static class Clock
             Now = SW.ElapsedMilliseconds;
         else
             return;
-            
+        // Console.WriteLine(Now % 1000 == 0); 
         if (Now % 1000 == 0 && OneSecondElapsed != null)
             OneSecondElapsed (Now);
-        else if (Now % 500 == 0 && HalfSecondElapsed != null)
+        if (Now % 500 == 0 && HalfSecondElapsed != null)
             HalfSecondElapsed (Now);
-        else if (Now % 250 == 0 && QuarterSecondElapsed != null)
+        if (Now % 250 < Threshold && QuarterSecondElapsed != null)
             QuarterSecondElapsed (Now);
     }
 

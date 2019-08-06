@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using Pastel; 
 using Map;
 
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+
 namespace Frames
 {
     class Frame
@@ -22,6 +26,7 @@ namespace Frames
             this.G = (Grid)G.Clone();
             this.Product = (Grid)G.Clone();
             this.Product = FrameTools.ApplySprites(this.Product);
+            // this.Product = FrameTools.Sparkle(this.Product, 5, 0);
             this.Product = FrameTools.Flatten(this.Product);
             if (Lum)
                 this.Product = FrameTools.Luminate(this.Product);
@@ -65,12 +70,17 @@ namespace Frames
                         if (G.posGrid[z, y, x] != null)
                             if (G.posGrid[z, y, x].HasSprite)
                             {
-                                for (int sy = y; sy < y + G.posGrid[z, y, x].Sprite.height; sy++)
+                                for (int sy = 0; sy < G.posGrid[z, y, x].Sprite.height; sy++)
                                 {
-                                    for (int sx = x; sx < x + G.posGrid[z, y, x].Sprite.width; sx++)
-                                    {
-                                        tempG.posGrid[z, sy, sx] = (Unit)G.posGrid[z, y, x].Sprite.posGrid[0, sy-y, sx-x].Clone();
-                                    }
+                                    if (y + sy < G.height)
+                                        for (int sx = 0; sx < G.posGrid[z, y, x].Sprite.width; sx++)
+                                        {
+                                            if (x + sx < G.width)
+                                                if (G.posGrid[z, y, x].Sprite.posGrid[0, sy, sx] != null)
+                                                    tempG.posGrid[z, y + sy, x + sx] = (Unit)G.posGrid[z, y, x].Sprite.posGrid[0, sy, sx].Clone();
+                                                else 
+                                                    tempG.posGrid[z, y + sy, x + sx] = null;
+                                        }
                                 }
                             }
                     }
@@ -102,10 +112,15 @@ namespace Frames
             /*
                 Create a grid based off of a provided image file.
                 */
+            string binPath = "ImageAproximations/"+path.Substring(path.LastIndexOf('/')+1, path.LastIndexOf('.')-path.LastIndexOf('/')-1)+".bin";
+            Directory.CreateDirectory("ImageAproximations");
+            if (File.Exists(binPath))
+                return (Grid)new BinaryFormatter().Deserialize(new FileStream(binPath,FileMode.Open,FileAccess.Read));
 
             Grid product = new Grid(w, h, 1, new Unit('\u2593'));
 
             Bitmap image = new Bitmap(path);
+            // image = Blur(image, -1);
             int wR = image.Width / w;
             int hR = image.Height / h;
             // Console.WriteLine("wR - " + wR + " hR - " + hR + "\nimgW - " + image.Width + " imgH - " + image.Height);
@@ -122,13 +137,15 @@ namespace Frames
                         for (int x = (wR * bX); x < wR + (wR * bX); x++)
                         {
                             // Console.WriteLine((wR + (wR * bX)));
-                        
-                            Color pixel = image.GetPixel(x ,y);
-                            AvgR += pixel.R;
-                            AvgG += pixel.G;
-                            AvgB += pixel.B;
-                            AvgA += pixel.A;
-                            pixelCount++;
+                            if (x % 2 == 0)
+                            {
+                                Color pixel = image.GetPixel(x ,y);
+                                AvgR += pixel.R;
+                                AvgG += pixel.G;
+                                AvgB += pixel.B;
+                                AvgA += pixel.A;
+                                pixelCount++;
+                            }
                         }
 
                     AvgR = AvgR/pixelCount;
@@ -145,65 +162,24 @@ namespace Frames
                 }
                 // Console.WriteLine();
             }
+
+            
+            IFormatter formatter = new BinaryFormatter();
+            Stream stream = new FileStream(binPath,FileMode.Create,FileAccess.Write);
+            
+            formatter.Serialize(stream, product);
+            stream.Close();
+            
             return product;
         }
 
-        public static void DrawCircle(this Grid G, int centerX, int centerY, int r)
-        {
-            /*
-                Non functional and temporary.
-                */
-            int d = (5 - r * 4) / 4;
-            int x = 0;
-            int y = r;
-            // Grid postG = (Grid)G.Clone();
- 
-            int radius = r; 
-            while (radius >= 0)
-            {
-                // Console.WriteLine(radius);
-                // Console.Read();
-                // Console.Read();
-                // G = (Grid)postG.Clone();
-                do
-                {
-                    // ensure index is in range before setting (depends on your image implementation)
-                    // in this case we check if the pixel location is within the bounds of the image before setting the pixel
-                    if (centerX + x >= 0 && centerX + x <= G.width - 1 && centerY + y >= 0 && centerY + y <= G.height - 1) G.posGrid[0, centerY + y, centerX + x].Character = 'U';
-                    if (centerX + x >= 0 && centerX + x <= G.width - 1 && centerY - y >= 0 && centerY - y <= G.height - 1) G.posGrid[0, centerY - y, centerX + x].Character = 'U';
-                    if (centerX - x >= 0 && centerX - x <= G.width - 1 && centerY + y >= 0 && centerY + y <= G.height - 1) G.posGrid[0, centerY + y, centerX - x].Character = 'U';
-                    if (centerX - x >= 0 && centerX - x <= G.width - 1 && centerY - y >= 0 && centerY - y <= G.height - 1) G.posGrid[0, centerY - y, centerX - x].Character = 'U';
-                    if (centerX + y >= 0 && centerX + y <= G.width - 1 && centerY + x >= 0 && centerY + x <= G.height - 1) G.posGrid[0, centerY + x, centerX + y].Character = 'U';
-                    if (centerX + y >= 0 && centerX + y <= G.width - 1 && centerY - x >= 0 && centerY - x <= G.height - 1) G.posGrid[0, centerY - x, centerX + y].Character = 'U';
-                    if (centerX - y >= 0 && centerX - y <= G.width - 1 && centerY + x >= 0 && centerY + x <= G.height - 1) G.posGrid[0, centerY + x, centerX - y].Character = 'U';
-                    if (centerX - y >= 0 && centerX - y <= G.width - 1 && centerY - x >= 0 && centerY - x <= G.height - 1) G.posGrid[0, centerY - x, centerX - y].Character = 'U';
-                    if (d < 0)
-                    {
-                        d += 2 * x + 1;
-                    }
-                    else
-                    {
-                        d += 2 * (x - y) + 1;
-                        y--;
-                    }
-                    x++;
-                } while (x <= y);
-                radius--;
-                d = (5 - radius * 4) / 4;
-                x = 0;
-                y = radius;
-                Console.Read();
-                Renderer.Render (new Frame (G));
-            }
-        }
-
-        public static List<Tuple<int, int>> Line (Grid G, int x1, int y1, int x2, int y2)
+        public static LinkedList<Tuple<int, int>> Line (Grid G, int x1, int y1, int x2, int y2)
         {
             /*
                 Draw a line between two points and create a list of coordinates for said line.
                 */
 
-            List<Tuple<int, int>> Path = new List<Tuple<int, int>> ();
+            LinkedList<Tuple<int, int>> Path = new LinkedList<Tuple<int, int>> ();
             int DeltaX = Math.Abs(x1-x2);
             int DeltaY = Math.Abs(y1-y2);
 
@@ -223,7 +199,7 @@ namespace Frames
                     overflow += (ROC - (int)ROC);
                     for (int i = 1; i <= ((int)ROC + (int)overflow); i++)
                     {
-                        Path.Add(Tuple.Create(curX, curY));
+                        Path.AddLast(Tuple.Create(curX, curY));
                         // G.posGrid[0, curY, curX].Character = 'O';
                         curY+=YDir;
                     }
@@ -238,7 +214,7 @@ namespace Frames
                     overflow += (ROC - (int)ROC);
                     for (int i = 1; i <= ((int)ROC + (int)overflow); i++)
                     {
-                        Path.Add(Tuple.Create(curX, curY));
+                        Path.AddLast(Tuple.Create(curX, curY));
                         // G.posGrid[0, curY, curX].Character = 'O';
                         curX+=XDir;
                     }
@@ -253,21 +229,36 @@ namespace Frames
             {
                 Path.Clear();
                 for (int y = (y1 < y2 ? y1 : y2);  (y1 < y2 ? y <= y2 : y >= y1); y+= (y1 < y2 ? 1 : -1))
-                    Path.Add(Tuple.Create(x1, y));
+                    Path.AddLast(Tuple.Create(x1, y));
                 return Path;                
             } 
             else if (y1 == y2)
             {
                 Path.Clear();
                 for (int x = (x1 < x2 ? x1 : x2); (x1 < x2 ? x <= x2 : x >= x1); x+= (x1 < x2 ? 1 : -1))
-                    Path.Add(Tuple.Create(x, y1));
+                    Path.AddLast(Tuple.Create(x, y1));
                 return Path;
             }
             else
-                Path.Add(Tuple.Create(curX, curY));
+                Path.AddLast(Tuple.Create(curX, curY));
             // G.posGrid[0, curY, curX].Character = 'O';   
-            Path.Reverse();
             return Path;
+        }
+
+        public static Grid Sparkle (Grid G, int maxPoints, int layer)
+        {
+            Random rnd = new Random();
+            while (maxPoints > 0)
+            {
+                int x = rnd.Next(0, G.width);
+                int y = rnd.Next(0, G.height);
+                G.posGrid[layer, y, x].Flags.Add("luminant");
+                G.posGrid[layer, y, x].lumConstant = 0.5;
+                
+                maxPoints--;
+            }
+
+            return G;
         }
 
         public static Grid Luminate (Grid G)
@@ -275,19 +266,29 @@ namespace Frames
             /*
                 Apply lumination effect, inefficiently.
                 */
+            
                 
-            double [,] lumMap = new double [G.height, G.width];
-            double lumConstant = 0.90;        
+            double [,] lumMap = new double [G.height, G.width];  
+            double minLum = 0.20;   
+            int maxLumDistance = 0;   
 
             for (int y = 0; y < G.height; y++)
                 for (int x = 0; x < G.width; x++)
                 {
                     if (G.posGrid[0, y, x].Flags.Contains("luminant"))
                     {
-                        // Console.WriteLine(y + " " + x);
-                        // Console.Read();
-                        for (int y2 = 0; y2 < G.height; y2++)
-                            for (int x2 = 0; x2 < G.width; x2++)
+                        maxLumDistance = 0;
+                        double c = G.posGrid[0, y, x].lumConstant;
+                        while (Math.Round(c, 2) >= minLum)
+                        {
+                            maxLumDistance++;
+                            c = Math.Pow(G.posGrid[0, y, x].lumConstant, maxLumDistance);
+                        }
+                        // Console.WriteLine(maxLumDistance);
+                        // Console.ReadLine();
+
+                        for (int y2 = (y - maxLumDistance) >= 0 ? (y - maxLumDistance) : 0; y2 < ((y + maxLumDistance) <= G.height ? (y + maxLumDistance) : G.height); y2++)
+                            for (int x2 = (x - maxLumDistance) >= 0 ? (x - maxLumDistance) : 0; x2 < ((x + maxLumDistance) <= G.width ? (x + maxLumDistance) : G.width); x2++)
                             {
                                 var Path = Line(G, x2, y2, x, y);
                                 int distance = Math.Abs(x2 - x) + Math.Abs(y2 - y);
@@ -295,9 +296,10 @@ namespace Frames
                                 bool reachable = true;
                                 for (int i = 0; i < Path.Count - 1; i++)
                                 {
-                                    if (G.posGrid[0, Path[i].Item2, Path[i].Item1].Flags.Contains("wall"))
+                                    var Coord = Path.First;
+                                    Path.RemoveFirst();
+                                    if (G.posGrid[0, Coord.Value.Item2, Coord.Value.Item1].Flags.Contains("wall"))
                                     {
-                                        // Console.WriteLine(S.Item1 + " " + S.Item2 + " w");
                                         reachable = false;
                                     }
                                 }
@@ -306,8 +308,8 @@ namespace Frames
                                 {
                                     // lumMap[y2, x2] = 0;
                                 }
-                                else if (lumMap[y2, x2] < Math.Pow(lumConstant, distance))
-                                    lumMap[y2, x2] = Math.Pow(lumConstant, distance);
+                                else if (lumMap[y2, x2] < Math.Pow(G.posGrid[0, y, x].lumConstant, distance))
+                                    lumMap[y2, x2] = Math.Pow(G.posGrid[0, y, x].lumConstant, distance);
                             }
                     }
                 }
@@ -317,8 +319,8 @@ namespace Frames
                 for (int x = 0; x < G.width; x++)
                 {
                     double l = lumMap[y, x];
-                    if (l < 0.2)
-                        l = 0.2;
+                    if (l < minLum)
+                        l = minLum;
                     Color oldColor = G.posGrid[0, y, x].ColorValue ?? default(Color);
                     Color newColor = Color.FromArgb(
                             (int)(oldColor.R * l),
@@ -328,16 +330,6 @@ namespace Frames
                     G.posGrid[0, y, x].ColorValue = newColor;
                 }
             }
-
-            // for (int y = 0; y < G.height; y++)
-            // {
-            //     for (int x = 0; x < G.width; x++)
-            //     {
-            //         Console.Write($"{('\u2593'+"").Pastel(G.posGrid[0, y, x].ColorValue ?? default(Color))}");
-            //     }
-            //     Console.WriteLine();
-            // }
-            // Console.Read();
 
             return G;
         }

@@ -1,10 +1,13 @@
 using System;
 using System.Drawing;
 using System.Collections.Generic; 
+using System.IO;
+using System.Text;
 // using Pastel;
 
 namespace Map
 {
+    [Serializable]
     class Unit : ICloneable
     {
         /*
@@ -17,21 +20,43 @@ namespace Map
         public Color? ColorValue {get; set;}
         public Grid Sprite {get; private set;}
         public bool HasSprite {get; private set;}
+        public string currentSprite {get; private set;}
+        public Dictionary<string, Grid> Sprites;
+        public double lumConstant {get; set;}
 
         public Unit (char Character, Color? ColorValue = null)
         {
             this.Character = Character;
             this.ColorValue = ColorValue;
             this.Flags = new List<string>();
+            this.Sprites = new Dictionary<string, Grid> ();
 
             this.HasSprite = false;
             this.Sprite = null;
+            this.currentSprite = null;
+
+            lumConstant = 0.95;
         }
 
-        public void SetSprite (Grid S)
+        public void AddSprite (string name, Grid S)
         {
+            Sprites.Add(name, (Grid)S.Clone());
+        }
+
+        public void SetSprite (string name)
+        {
+            Grid S;
             HasSprite = true;
-            Sprite = (Grid)S.Clone();
+            if (Sprites.TryGetValue(name, out S))
+            {
+                Sprite = S;
+                currentSprite = name;
+            }
+            else
+            {
+                HasSprite = false;
+                currentSprite = null;
+            }
         }
 
         public object Clone ()
@@ -42,8 +67,34 @@ namespace Map
                 C.Flags.Add(flag);
             return (object)C;
         }
+
+        public void ReadOut()
+        {
+            Console.Clear();
+            string str = "";
+            str = "Character: (int)" + (int)this.Character + " (char)" + this.Character;
+            Console.WriteLine(str);
+            str = "Color: " + this.ColorValue.ToString();
+            Console.WriteLine(str);
+            if (Flags.Count != 0)
+            {    
+                str = "Flags:";
+                Console.WriteLine(str);
+                foreach (string flag in this.Flags)
+                {
+                    str = "\t" + flag;
+                    Console.WriteLine(str);
+                }
+            }
+            str = "LumConstant: " + this.lumConstant;
+            Console.WriteLine(str);
+            str = "Has Sprite: " + this.HasSprite;
+            Console.WriteLine(str);
+        }
+
     }
 
+    [Serializable]
     class Grid : ICloneable
     {
         public Unit [,,] posGrid;
@@ -68,6 +119,57 @@ namespace Map
                     for (int y = 0; y < height; y++)
                         for (int u = 0; u < width; u++)
                             posGrid[z, y ,u] = null;
+        }
+
+        public static Grid LoadGrid (string path)
+        {
+            using (StreamReader sr = File.OpenText(path))
+            {
+                int depth, height, width;
+                depth = System.Convert.ToInt32(sr.ReadLine());
+                height = System.Convert.ToInt32(sr.ReadLine());
+                width = System.Convert.ToInt32(sr.ReadLine());
+
+                Grid G = new Grid(width, height, depth, new Unit('X'));
+
+                return G;
+            }
+        }
+
+        public void SaveGrid (string path)
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+
+            // Create the file.
+            using (FileStream fs = File.Create(path))
+            {
+                Byte[] info = new UTF8Encoding(true).GetBytes(this.depth+"\n"+this.height+"\n"+this.width+"\n");
+                fs.Write(info, 0, info.Length);
+                int count = 0;
+                foreach (Unit U in this.posGrid)
+                {
+                    if (count % (this.height * this.width) == 0)
+                    {
+                        info = new UTF8Encoding(true).GetBytes("::z_break::\n");
+                        fs.Write(info, 0, info.Length);                                            
+                    }
+                    else if (count % this.width == 0)
+                    {
+                        info = new UTF8Encoding(true).GetBytes("::y_break::\n");
+                        fs.Write(info, 0, info.Length); 
+                    }
+
+                    if (U == null)
+                        info = new UTF8Encoding(true).GetBytes("null\n");
+                    else
+                    {
+                        info = new UTF8Encoding(true).GetBytes((int)U.Character+"/"+U.ColorValue.ToString()+"/"+U.lumConstant+"\n");                        
+                    }
+                    fs.Write(info, 0, info.Length);
+                    count++;                                      
+                }
+            }
         }
 
         public object Clone()
@@ -97,7 +199,14 @@ namespace Map
             {
                 for (int x = 0; x < (G.width <= Slide.width ? G.width : Slide.width) - xOffset; x++)
                 {
-                    G.posGrid[layer, y + yOffset, x + xOffset] = Slide.posGrid[0, y, x];
+                    try
+                    {
+                        G.posGrid[layer, y + yOffset, x + xOffset] = Slide.posGrid[0, y, x];
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
                 }
             }
         }

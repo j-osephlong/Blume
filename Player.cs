@@ -1,5 +1,6 @@
 using System;
 using Map;
+using Frames;
 using System.Drawing;
 
 class Player
@@ -18,9 +19,14 @@ class Player
         this.playerUnit = playerUnit;
         playerUnit.Flags.Add("no_overwrite");
         playerUnit.Flags.Add("wall");
+        playerUnit.AddSprite("boy", FrameTools.ReadImageBlocks("Photos/2fgCROP.png", 8, 20));
+        playerUnit.AddSprite("guy", FrameTools.ReadImageBlocks("Photos/2.jpg", 8, 20));
+        playerUnit.SetSprite("boy");
 
         dX = 1;
         dY = 1;
+
+        BG  = FrameTools.ReadImageBlocks("Photos/5.jpg", G.width*2, G.height);
     }
 
     public void Place (int xPos, int yPos, int layer)
@@ -80,6 +86,26 @@ class Player
             // newUnit.Flags.Add("luminant");
             G.posGrid[0, this.yPos, this.xPos].Flags.Add("luminant");
         }
+
+        if (KeyboardInput.IsPressed(ConsoleKey.I))
+        {
+            G.posGrid[0, this.yPos, this.xPos].ReadOut();
+            Console.ReadLine();
+            Renderer.PrintFrame(new Frame(G));
+        }
+    }
+
+    private int d = 0;
+    private Grid BG;
+
+    public void MoveBG (long Now)
+    {
+        // if (playerUnit.currentSprite == "boy")
+        //     playerUnit.SetSprite("guy");
+        // else
+        //     playerUnit.SetSprite("boy");
+        Grid.SetLayer(G, 0, d, 0, BG);
+        d++;     
     }
 
 }
