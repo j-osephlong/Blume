@@ -10,6 +10,7 @@ and afterwards contrasts the previous frame with the new for changes, and re-ren
 
 ## Current State
 *This section needs to be updated, see "whats new" section below*
+
 The program, as downloaded right now, will load a 50x50, 2 layered plane, with a 'player' Unit, and two luminant Units. You can move around, place walls and lights. As of now, it is very inconsistent with lighting, but is fun to play with.
 
 Known issues include:
