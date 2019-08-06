@@ -9,6 +9,7 @@ is then passed into the renderer object. The renderer object will first render t
 and afterwards contrasts the previous frame with the new for changes, and re-renders only the changed units.
 
 ## Current State
+*This section needs to be updated, see "whats new" section below*
 The program, as downloaded right now, will load a 50x50, 2 layered plane, with a 'player' Unit, and two luminant Units. You can move around, place walls and lights. As of now, it is very inconsistent with lighting, but is fun to play with.
 
 Known issues include:
@@ -27,9 +28,17 @@ returning a Frame object of said grid, which can then be passed to the renderer 
 
 * Press o to place a light, and p to place a wall. Play with the very inconsistent lighting system. Renders fast, though.
 
-## Future
+## Lighting Effect *WIP*
 * Lighting effect, where units which have the flag 'luminant' will light units around it, with the exponential formula 
 ![Lumocity Formula](https://imgur.com/UtBaDq5.png)<br/>
 , where L is the lumocity value of the unit relative to the luminant unit, and D is the distance between the two units.
-* A functioning game loop with active contrast rendering
-* Keyboard input stream, with support for toggles
+
+## Whats new
+* Fully functional contrast rendering.
+* Added keyboard input
+* Optimized renderer
+* Optimized image approximation
+* Added automatic saving of approximated images using serialization
+* Started beginings of mouse input
+* Broke the clock class, whoop
+* Added use of sprites, which are smaller Grid objects, optionally stored inside Unit objects, to be added to the Frame pre-render. A unit may have multiple sprites stored and hot-swappable.
