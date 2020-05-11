@@ -35,10 +35,10 @@ class Renderer
         {
             for (int u = 0; u < F.Product.width; u++) //F.Product.width
             {
-                if (F.Product.posGrid[0, y, u].ColorValue == null)
-                    Console.Write(F.Product.posGrid[0, y + yOffset, u + xOffset].Character );
+                if (F.Product[0, y, u].ColorValue == null)
+                    Console.Write(F.Product[0, y + yOffset, u + xOffset].Character );
                 else
-                    Console.Write($"{(F.Product.posGrid[0, y + yOffset, u + xOffset].Character + "").Pastel(F.Product.posGrid[0, y + yOffset, u + xOffset].ColorValue ?? default(Color))}");
+                    Console.Write($"{(F.Product[0, y + yOffset, u + xOffset].Character + "").Pastel(F.Product[0, y + yOffset, u + xOffset].ColorValue ?? default(Color))}");
             }
             Console.WriteLine();
         }
@@ -46,25 +46,18 @@ class Renderer
     
     public static void Update(Frame F)
     {
-        int prevX = 0;
-        int prevY = 0;
-        bool firstChange = true;
-        foreach (var change in FrameTools.Contrast(PrevFrame, F))
+        //change Product indicing to indice with coord struct
+        foreach (Coord change in FrameTools.Contrast(PrevFrame, F))
         {
-            if (firstChange)
-                Console.SetCursorPosition(change.Item1, change.Item2);
-
-            if (change.Item2 != prevY || change.Item1 != prevX + 1)
-                Console.SetCursorPosition(change.Item1, change.Item2);
+            Console.SetCursorPosition(change.x, change.y);
             
-            if (F.Product.posGrid[0, change.Item2, change.Item1].ColorValue == null)
-                Console.Write(F.Product.posGrid[0, change.Item2, change.Item1].Character);
+            if (F.Product[change].ColorValue == null)
+                Console.Write(F.Product[change].Character);
             else
-                Console.Write($"{(F.Product.posGrid[0, change.Item2, change.Item1].Character + "").Pastel(F.Product.posGrid[0, change.Item2, change.Item1].ColorValue ?? default(Color))}");
-            
-            prevX = change.Item1;
-            prevY = change.Item2;
-            firstChange = false;
+                Console.Write($"{(F.Product[change].Character + "").Pastel(F.Product[change].ColorValue ?? default(Color))}");
+
         }
+
+        PrevFrame = F;
     }
 }

@@ -21,15 +21,13 @@ namespace Frames
         public Grid Product;
 
         //final step must be to flatten Grid
-        public Frame (Grid G, bool Lum = true)
+        public Frame (Grid G)
         {
             this.G = (Grid)G.Clone();
             this.Product = (Grid)G.Clone();
-            this.Product = FrameTools.ApplySprites(this.Product);
-            // this.Product = FrameTools.Sparkle(this.Product, 5, 0);
+            
             this.Product = FrameTools.Flatten(this.Product);
-            if (Lum)
-                this.Product = FrameTools.Luminate(this.Product);
+            this.Product.ApplyLuminance();
         }
     }
 
@@ -41,297 +39,203 @@ namespace Frames
                 Create a flattened, top down, 2d grid from the 3d grid passed to the frame
                 */
 
-            Grid product = new Grid(G.width, G.height, 1, null);
+            Grid product = new Grid(G.width, G.height, 1);
             for (int z = G.depth - 1; z >= 0; z--)
                 for (int y = 0; y < G.height; y++)
                     for (int x = 0; x < G.width; x++)
                     {
-                        if (product.posGrid[0, y, x] == null && G.posGrid[z, y, x] != null)
-                            product.posGrid[0, y, x] = G.posGrid[z, y, x];
+                        if (product[0, y, x] == null && G[z, y, x] != null)
+                            product[0, y, x] = G[z, y, x];
                     }
 
             return product;
         }
 
-        public static Grid ApplySprites (Grid G)
-        {
-            /*
-                Every unit in a grid may have a sprite attached to it, which is another grid.
-                The sprite is not applied to the grid before it is passed to a frame for the
-                purpose of preserving position data.
-                */
-
-            Grid tempG = (Grid)G.Clone();
-            for (int z = 0; z < G.depth; z++)
-                for (int y = 0; y < G.height; y++)
-                {
-                    for (int x = 0; x < G.width; x++)
-                    {
-                        if (G.posGrid[z, y, x] != null)
-                            if (G.posGrid[z, y, x].HasSprite)
-                            {
-                                for (int sy = 0; sy < G.posGrid[z, y, x].Sprite.height; sy++)
-                                {
-                                    if (y + sy < G.height)
-                                        for (int sx = 0; sx < G.posGrid[z, y, x].Sprite.width; sx++)
-                                        {
-                                            if (x + sx < G.width)
-                                                if (G.posGrid[z, y, x].Sprite.posGrid[0, sy, sx] != null)
-                                                    tempG.posGrid[z, y + sy, x + sx] = (Unit)G.posGrid[z, y, x].Sprite.posGrid[0, sy, sx].Clone();
-                                                else 
-                                                    tempG.posGrid[z, y + sy, x + sx] = null;
-                                        }
-                                }
-                            }
-                    }
-                }
-
-            return tempG;
-        }
-
-        public static List<Tuple<int, int>> Contrast (Frame F1, Frame F2)
+        public static List<Coord> Contrast (Frame F1, Frame F2)
         {
             /*
                 Find all differences between two frames.
                 */
 
             //only contrasts flattned Frames
-            List<Tuple<int, int>> changes = new List<Tuple<int, int>> ();
+            List<Coord> changes = new List<Coord> ();
 
             for (int y = 0; y < F1.Product.height; y++)
                 for (int x = 0; x < F1.Product.width; x++)
-                    if (F1.Product.posGrid[0, y, x].Character != F2.Product.posGrid[0, y, x].Character
-                        || F1.Product.posGrid[0, y, x].ColorValue != F2.Product.posGrid[0, y, x].ColorValue)
-                        changes.Add(Tuple.Create(x, y));
+                    if (F1.Product[0, y, x].Character != F2.Product[0, y, x].Character
+                        || 
+                        F1.Product[0, y, x].ColorValue != F2.Product[0, y, x].ColorValue)
+                        changes.Add(new Coord(x, y));
 
             return changes;
         }
 
-        public static Grid ReadImageBlocks (string path, int w, int h)
+        public static void ApplyLuminance (this Grid G)
         {
-            /*
-                Create a grid based off of a provided image file.
-                */
-            string binPath = "ImageAproximations/"+path.Substring(path.LastIndexOf('/')+1, path.LastIndexOf('.')-path.LastIndexOf('/')-1)+".bin";
-            Directory.CreateDirectory("ImageAproximations");
-            if (File.Exists(binPath))
-                return (Grid)new BinaryFormatter().Deserialize(new FileStream(binPath,FileMode.Open,FileAccess.Read));
+            double [,] LumMap = Luminate.GenLumMap(G);
 
-            Grid product = new Grid(w, h, 1, new Unit('\u2593'));
+            // for (int i = 0; i < 10; i++)
+            //     Console.Write(LumMap[i, i]+" ");
 
-            Bitmap image = new Bitmap(path);
-            // image = Blur(image, -1);
-            int wR = image.Width / w;
-            int hR = image.Height / h;
-            // Console.WriteLine("wR - " + wR + " hR - " + hR + "\nimgW - " + image.Width + " imgH - " + image.Height);
-            for (int bY = 0; bY < h; bY++)
+            // Console.Read/sz();
+
+            for (int y = 0; y < G.height; y++)
             {
-                for (int bX = 0; bX < w; bX++)
+                for (int x = 0; x < G.width; x++)
                 {
-                    int AvgR = 0;
-                    int AvgG = 0;
-                    int AvgB = 0;
-                    int AvgA = 0;
-                    int pixelCount = 0;
-                    for (int y = (hR * bY); y < hR + (hR * bY); y++)
-                        for (int x = (wR * bX); x < wR + (wR * bX); x++)
-                        {
-                            // Console.WriteLine((wR + (wR * bX)));
-                            if (x % 2 == 0)
-                            {
-                                Color pixel = image.GetPixel(x ,y);
-                                AvgR += pixel.R;
-                                AvgG += pixel.G;
-                                AvgB += pixel.B;
-                                AvgA += pixel.A;
-                                pixelCount++;
-                            }
-                        }
-
-                    AvgR = AvgR/pixelCount;
-                    AvgG = AvgG/pixelCount;
-                    AvgB = AvgB/pixelCount;
-                    AvgA = AvgA/pixelCount;
-                    // Console.WriteLine(AvgR+"-"+AvgG+"-"+AvgB);
-                    if (AvgA >225)
-                        product.posGrid[0, bY, bX].ColorValue = Color.FromArgb(AvgR, AvgG, AvgB);
-                    else    
-                        product.posGrid[0, bY, bX] = null;
-                    // product.posGrid[0, bY, bX].Flags.Add("luminant");
-                    // Console.Write($"{"\u2593\u2593".Pastel(Color.FromArgb(AvgR, AvgG, AvgB))}");
+                    Color C = G[0, y, x].ColorValue ?? default(Color);
+                    Color newC = Color.FromArgb(
+                            (int)(C.R * (LumMap[y, x]>Luminate.minLuminance ? LumMap[y, x] : Luminate.minLuminance)),
+                            (int)(C.G * (LumMap[y, x]>Luminate.minLuminance ? LumMap[y, x] : Luminate.minLuminance)),
+                            (int)(C.B * (LumMap[y, x]>Luminate.minLuminance ? LumMap[y, x] : Luminate.minLuminance))
+                        );
+                    
+                    G[0, y, x].ColorValue = newC;
                 }
-                // Console.WriteLine();
             }
-
-            
-            IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream(binPath,FileMode.Create,FileAccess.Write);
-            
-            formatter.Serialize(stream, product);
-            stream.Close();
-            
-            return product;
         }
 
-        public static LinkedList<Tuple<int, int>> Line (Grid G, int x1, int y1, int x2, int y2)
+
+    }
+
+    class Luminate
+    {
+        public const double minLuminance = 0.15; 
+        public const double decayFactor = 0.01; 
+
+        public static List<Coord> Line (Coord CStart, Coord CEnd)
         {
-            /*
-                Draw a line between two points and create a list of coordinates for said line.
-                */
+            double dX = CEnd.x - CStart.x;
+            double dY = CEnd.y - CStart.y;
+            double dErr;
+            double err = 0.0;
 
-            LinkedList<Tuple<int, int>> Path = new LinkedList<Tuple<int, int>> ();
-            int DeltaX = Math.Abs(x1-x2);
-            int DeltaY = Math.Abs(y1-y2);
+            List<Coord> L = new List<Coord>();
+            Coord C1 = CStart;
+            Coord C2 = CEnd;
 
-            double ROC = DeltaX < DeltaY ? (double)DeltaY/DeltaX : (double)DeltaX/DeltaY;
-            char Dir = DeltaX < DeltaY ? 'Y' : 'X';
+            if (dY < 0)
+                C2.y+= 2*((int)Math.Abs(dY));
+            if (dX < 0)
+                C2.x+= 2*((int)Math.Abs(dX));
 
-            int XDir = x1 < x2 ? 1 : (x1 == x2 ? 0 : -1);
-            int YDir = y1 < y2 ? 1 : (y1 == y2 ? 0 : -1);
-
-            int curX = x1; int curY = y1;
-            
-            double overflow = 0;
-            while (curX != x2 && curY != y2)
+            if ((C2.x-C1.x) > (C2.y-C1.y))
             {
-                if (Dir == 'Y')
+                dErr = Math.Abs((double)(C2.y-C1.y)/(C2.x-C1.x));
+                int y = C1.y;
+
+                for (int x = C1.x; x < C2.x; x++)
                 {
-                    overflow += (ROC - (int)ROC);
-                    for (int i = 1; i <= ((int)ROC + (int)overflow); i++)
-                    {
-                        Path.AddLast(Tuple.Create(curX, curY));
-                        // G.posGrid[0, curY, curX].Character = 'O';
-                        curY+=YDir;
-                    }
-                    if (overflow >= 1)
-                        overflow = overflow - (int)overflow;
-                    curX+=XDir;
-                    // G.posGrid[0, curY, curX].Character = 'O';
-                }
+                    L.Add(new Coord(x, y));
 
-                if (Dir == 'X')
-                {
-                    overflow += (ROC - (int)ROC);
-                    for (int i = 1; i <= ((int)ROC + (int)overflow); i++)
+                    err += dErr;
+                    if (err >= 0.5)
                     {
-                        Path.AddLast(Tuple.Create(curX, curY));
-                        // G.posGrid[0, curY, curX].Character = 'O';
-                        curX+=XDir;
+                        y += 1;
+                        err -= 1.0;
                     }
-                    if (overflow >= 1)
-                        overflow = overflow - (int)overflow;
-                    curY+=YDir;
-                    // G.posGrid[0, curY, curX].Character = 'O';
                 }
-            }
-
-            if (x1 == x2)
-            {
-                Path.Clear();
-                for (int y = (y1 < y2 ? y1 : y2);  (y1 < y2 ? y <= y2 : y >= y1); y+= (y1 < y2 ? 1 : -1))
-                    Path.AddLast(Tuple.Create(x1, y));
-                return Path;                
-            } 
-            else if (y1 == y2)
-            {
-                Path.Clear();
-                for (int x = (x1 < x2 ? x1 : x2); (x1 < x2 ? x <= x2 : x >= x1); x+= (x1 < x2 ? 1 : -1))
-                    Path.AddLast(Tuple.Create(x, y1));
-                return Path;
             }
             else
-                Path.AddLast(Tuple.Create(curX, curY));
-            // G.posGrid[0, curY, curX].Character = 'O';   
-            return Path;
-        }
-
-        public static Grid Sparkle (Grid G, int maxPoints, int layer)
-        {
-            Random rnd = new Random();
-            while (maxPoints > 0)
             {
-                int x = rnd.Next(0, G.width);
-                int y = rnd.Next(0, G.height);
-                G.posGrid[layer, y, x].Flags.Add("luminant");
-                G.posGrid[layer, y, x].lumConstant = 0.5;
-                
-                maxPoints--;
-            }
+                dErr = Math.Abs((double)(C2.x-C1.x)/(C2.y-C1.y));
+                int x = C1.x;
 
-            return G;
-        }
-
-        public static Grid Luminate (Grid G)
-        {
-            /*
-                Apply lumination effect, inefficiently.
-                */
-            
-                
-            double [,] lumMap = new double [G.height, G.width];  
-            double minLum = 0.20;   
-            int maxLumDistance = 0;   
-
-            for (int y = 0; y < G.height; y++)
-                for (int x = 0; x < G.width; x++)
+                for (int y = C1.y; y < C2.y; y++)
                 {
-                    if (G.posGrid[0, y, x].Flags.Contains("luminant"))
+                    L.Add(new Coord(x, y));
+
+                    err += dErr;
+                    if (err >= 0.5)
                     {
-                        maxLumDistance = 0;
-                        double c = G.posGrid[0, y, x].lumConstant;
-                        while (Math.Round(c, 2) >= minLum)
-                        {
-                            maxLumDistance++;
-                            c = Math.Pow(G.posGrid[0, y, x].lumConstant, maxLumDistance);
-                        }
-                        // Console.WriteLine(maxLumDistance);
-                        // Console.ReadLine();
-
-                        for (int y2 = (y - maxLumDistance) >= 0 ? (y - maxLumDistance) : 0; y2 < ((y + maxLumDistance) <= G.height ? (y + maxLumDistance) : G.height); y2++)
-                            for (int x2 = (x - maxLumDistance) >= 0 ? (x - maxLumDistance) : 0; x2 < ((x + maxLumDistance) <= G.width ? (x + maxLumDistance) : G.width); x2++)
-                            {
-                                var Path = Line(G, x2, y2, x, y);
-                                int distance = Math.Abs(x2 - x) + Math.Abs(y2 - y);
-
-                                bool reachable = true;
-                                for (int i = 0; i < Path.Count - 1; i++)
-                                {
-                                    var Coord = Path.First;
-                                    Path.RemoveFirst();
-                                    if (G.posGrid[0, Coord.Value.Item2, Coord.Value.Item1].Flags.Contains("wall"))
-                                    {
-                                        reachable = false;
-                                    }
-                                }
-
-                                if (!reachable)
-                                {
-                                    // lumMap[y2, x2] = 0;
-                                }
-                                else if (lumMap[y2, x2] < Math.Pow(G.posGrid[0, y, x].lumConstant, distance))
-                                    lumMap[y2, x2] = Math.Pow(G.posGrid[0, y, x].lumConstant, distance);
-                            }
+                        x += 1;
+                        err -= 1.0;
                     }
                 }
+            }
+
+            L.Add(C2);
+
+            if (dY < 0)
+                for (int i = 0; i < L.Count; i++)
+                {
+                    Coord C = L[i];
+                    C.y-= 2*Math.Abs(C.y-C1.y);
+                    L[i] = C;
+                }
+
+            if (dX < 0)
+                for (int i = 0; i < L.Count; i++)
+                {
+                    Coord C = L[i];
+                    C.x-= 2*Math.Abs(C.x-C1.x);
+                    L[i] = C;
+                }
+
+            return L;
+        }
+
+        public static int GetMaxLumDist(double lum)
+        {
+            int maxLumDist = 0;
+            double c = lum;
+
+            while (Math.Round(c, 2) >= minLuminance)
+            {
+                maxLumDist++;
+                c = Math.Pow(lum*(1-decayFactor), maxLumDist);
+            }
+
+            return maxLumDist;
+        }
+
+        public static double[,] GenLumMap (Grid G)
+        {
+            double [,] LumMap = new double [G.height, G.width];
+            List<Coord> LuminantUnits = new List<Coord> ();
 
             for (int y = 0; y < G.height; y++)
-            {
                 for (int x = 0; x < G.width; x++)
+                    if (G[0, y, x].HasFlag("lum"))
+                        LuminantUnits.Add(new Coord(x, y));
+
+            foreach (Coord C in LuminantUnits)
+            {
+                double Luminance = G[C].GetFlag<double>("lum");
+
+                int maxDist = GetMaxLumDist(Luminance);
+    
+                int xMinDist = C.x - maxDist >= 0? C.x - maxDist : 0;
+                int xMaxDist = C.x + maxDist <= G.width? C.x + maxDist : G.width;
+                int yMinDist = C.y - maxDist >= 0? C.y - maxDist : 0;
+                int yMaxDist = C.y + maxDist <= G.height? C.y + maxDist : G.height;
+
+                for (int y = yMinDist; y < yMaxDist; y++)
                 {
-                    double l = lumMap[y, x];
-                    if (l < minLum)
-                        l = minLum;
-                    Color oldColor = G.posGrid[0, y, x].ColorValue ?? default(Color);
-                    Color newColor = Color.FromArgb(
-                            (int)(oldColor.R * l),
-                            (int)(oldColor.G * l),
-                            (int)(oldColor.B * l)
-                        );
-                    G.posGrid[0, y, x].ColorValue = newColor;
+                    for (int x = xMinDist; x < xMaxDist; x++)
+                    {
+                        List<Coord> ray = Line(C, new Coord(x, y));
+                        int i = ray.Count;
+                        foreach (Coord C2 in ray)
+                        {
+                            double l = Math.Pow(Luminance*(1-decayFactor), Math.Abs(C.x-C2.x)+Math.Abs(C.y-C2.y));
+                            if (l > LumMap[C2.y, C2.x])
+                            {
+                                if (l < minLuminance)
+                                    LumMap[C2.y, C2.x] = minLuminance;
+                                else
+                                    LumMap[C2.y, C2.x] = l;
+                            }
+                            if (G[C2].HasFlag("solid"))
+                                break;
+                            i--;
+                        }
+                    }
                 }
             }
 
-            return G;
+            return LumMap;
         }
     }
+
 }

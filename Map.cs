@@ -7,168 +7,116 @@ using System.Text;
 
 namespace Map
 {
+    public struct Coord
+    {
+        public int x;
+        public int y;
+        public int? z;
+
+        public Coord (int x, int y, int z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public Coord (int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = null;
+        }
+    }
+
     [Serializable]
-    class Unit : ICloneable
+    public class Unit : ICloneable
     {
         /*
             A unit is a single point on a grid, with it's own Flag, Sprite, character, and color 
             information.
             */
 
-        public List<string> Flags;
+        public Dictionary<string, object> Flags;
         public char Character {get; set;}
         public Color? ColorValue {get; set;}
-        public Grid Sprite {get; private set;}
-        public bool HasSprite {get; private set;}
-        public string currentSprite {get; private set;}
-        public Dictionary<string, Grid> Sprites;
-        public double lumConstant {get; set;}
 
         public Unit (char Character, Color? ColorValue = null)
         {
             this.Character = Character;
             this.ColorValue = ColorValue;
-            this.Flags = new List<string>();
-            this.Sprites = new Dictionary<string, Grid> ();
-
-            this.HasSprite = false;
-            this.Sprite = null;
-            this.currentSprite = null;
-
-            lumConstant = 0.95;
+            this.Flags = new Dictionary<string, object>();
         }
 
-        public void AddSprite (string name, Grid S)
+        public T GetFlag<T>(string flag)
         {
-            Sprites.Add(name, (Grid)S.Clone());
+            return (T)Flags[flag];
         }
 
-        public void SetSprite (string name)
+        public void SetFlag (string flag, object value)
         {
-            Grid S;
-            HasSprite = true;
-            if (Sprites.TryGetValue(name, out S))
-            {
-                Sprite = S;
-                currentSprite = name;
-            }
-            else
-            {
-                HasSprite = false;
-                currentSprite = null;
-            }
+            if (Flags.ContainsKey(flag))
+                Flags.Remove(flag);
+            Flags.Add(flag, value);
+        }
+
+        public bool HasFlag(string flag)
+        {
+            return Flags.ContainsKey(flag);
         }
 
         public object Clone ()
         {
             Unit C = (Unit)this.MemberwiseClone();
-            C.Flags = new List<string>();
-            foreach(string flag in Flags)
-                C.Flags.Add(flag);
+            C.Flags = new Dictionary<string, object>();
+            foreach(string flag in Flags.Keys)
+                C.Flags.Add(flag, Flags[flag]);
             return (object)C;
         }
-
-        public void ReadOut()
-        {
-            Console.Clear();
-            string str = "";
-            str = "Character: (int)" + (int)this.Character + " (char)" + this.Character;
-            Console.WriteLine(str);
-            str = "Color: " + this.ColorValue.ToString();
-            Console.WriteLine(str);
-            if (Flags.Count != 0)
-            {    
-                str = "Flags:";
-                Console.WriteLine(str);
-                foreach (string flag in this.Flags)
-                {
-                    str = "\t" + flag;
-                    Console.WriteLine(str);
-                }
-            }
-            str = "LumConstant: " + this.lumConstant;
-            Console.WriteLine(str);
-            str = "Has Sprite: " + this.HasSprite;
-            Console.WriteLine(str);
-        }
-
     }
 
     [Serializable]
-    class Grid : ICloneable
+    public class Grid : ICloneable
     {
         public Unit [,,] posGrid;
         public int width, height, depth;
 
-        public Grid (int width, int height, int depth, Unit defaultUnit)
+        public Grid (int width, int height, int depth)
         {
             this.width = width;
             this.height = height;
             this.depth = depth;
-            
-            posGrid = new Unit [depth, height, width];
-            for (int y = 0; y < height; y++)
-                for (int u = 0; u < width; u++)
-                    if (defaultUnit == null)
-                        posGrid[0, y, u] = null;
-                    else 
-                        posGrid[0, y, u] = (Unit)defaultUnit.Clone();
 
-            if (depth > 1)
-                for (int z = 1; z < depth; z++)
-                    for (int y = 0; y < height; y++)
-                        for (int u = 0; u < width; u++)
-                            posGrid[z, y ,u] = null;
+            this.posGrid = new Unit [this.depth, this.height, this.width];
+            
+            for (int z = 0; z < this.depth; z++)
+                for (int y = 0; y < this.height; y++)
+                    for (int x = 0; x < this.width; x++)
+                        this[z, y, x] = null;
         }
 
-        public static Grid LoadGrid (string path)
+        public Unit this[int z, int y, int x]
         {
-            using (StreamReader sr = File.OpenText(path))
+            get
             {
-                int depth, height, width;
-                depth = System.Convert.ToInt32(sr.ReadLine());
-                height = System.Convert.ToInt32(sr.ReadLine());
-                width = System.Convert.ToInt32(sr.ReadLine());
+                return posGrid[z, y, x];
+            }
 
-                Grid G = new Grid(width, height, depth, new Unit('X'));
-
-                return G;
+            set
+            {
+                posGrid[z, y, x] = value;
             }
         }
 
-        public void SaveGrid (string path)
+        public Unit this[Coord C]
         {
-            if (File.Exists(path))
-                File.Delete(path);
-
-            // Create the file.
-            using (FileStream fs = File.Create(path))
+            get
             {
-                Byte[] info = new UTF8Encoding(true).GetBytes(this.depth+"\n"+this.height+"\n"+this.width+"\n");
-                fs.Write(info, 0, info.Length);
-                int count = 0;
-                foreach (Unit U in this.posGrid)
-                {
-                    if (count % (this.height * this.width) == 0)
-                    {
-                        info = new UTF8Encoding(true).GetBytes("::z_break::\n");
-                        fs.Write(info, 0, info.Length);                                            
-                    }
-                    else if (count % this.width == 0)
-                    {
-                        info = new UTF8Encoding(true).GetBytes("::y_break::\n");
-                        fs.Write(info, 0, info.Length); 
-                    }
+                return posGrid[C.z ?? 0, C.y, C.x];
+            }
 
-                    if (U == null)
-                        info = new UTF8Encoding(true).GetBytes("null\n");
-                    else
-                    {
-                        info = new UTF8Encoding(true).GetBytes((int)U.Character+"/"+U.ColorValue.ToString()+"/"+U.lumConstant+"\n");                        
-                    }
-                    fs.Write(info, 0, info.Length);
-                    count++;                                      
-                }
+            set
+            {
+                posGrid[C.z ?? 0, C.y, C.x] = value;
             }
         }
 
@@ -184,31 +132,83 @@ namespace Map
             for (int z = 0; z < depth; z++)
                 for (int y = 0; y < height; y++)
                     for (int u = 0; u < width; u++)
-                        if (this.posGrid[z, y, u] != null)
-                            posGridClone[z, y, u] = (Unit)clone.posGrid[z, y, u].Clone();
+                        if (this[z, y, u] != null)
+                            posGridClone[z, y, u] = (Unit)clone[z, y, u].Clone();
                         else 
                             posGridClone[z, y, u] = null;
             clone.posGrid = posGridClone;
 
             return (object)clone;
         }
+    }
 
-        public static void SetLayer (Grid G, int layer, int xOffset, int yOffset, Grid Slide)
+    public static class GridTools
+    {
+        public static void FillLayer (this Grid G, int z, Unit u)
         {
-            for (int y = 0; y < (G.height <= Slide.height ? G.height : Slide.height) - yOffset; y++)
-            {
-                for (int x = 0; x < (G.width <= Slide.width ? G.width : Slide.width) - xOffset; x++)
+            for (int y = 0; y < G.height; y++)
+                for (int x = 0; x < G.width; x++)
                 {
-                    try
-                    {
-                        G.posGrid[layer, y + yOffset, x + xOffset] = Slide.posGrid[0, y, x];
-                    }
-                    catch (Exception e)
-                    {
+                    G[z, y, x] = (Unit)u.Clone();
+                }
+        }
 
-                    }
+        public static void SetLayer (this Grid G, int z, Grid B)
+        {
+            for (int y = 0; y < G.height; y++)
+                for (int x = 0; x < G.width; x++)
+                {
+                    G[z, y, x] = (Unit)B[z, y, x].Clone();
+                }
+        }
+
+        public static Grid ApproximateImage(string path, int width, int height)
+        {
+            Grid product = new Grid(width, height, 1);
+            product.FillLayer(0, new Unit('\u2593'));
+
+            Bitmap image = new Bitmap(path);
+
+            int wR = image.Width / width;
+            int hR = image.Height / height;
+
+            for (int bY = 0; bY < height; bY++)
+            {
+                for (int bX = 0; bX < width; bX++)
+                {
+                    int AvgR = 0;
+                    int AvgG = 0;
+                    int AvgB = 0;
+                    int AvgA = 0;
+                    int pixelCount = 0;
+                    for (int y = (hR * bY); y < hR + (hR * bY); y++)
+                        for (int x = (wR * bX); x < wR + (wR * bX); x++)
+                        {
+                            // Console.WriteLine((wR + (wR * bX)));
+                            if (x % 2 == 0)
+                            {
+                                Color pixel = image.GetPixel(x ,y);
+                                AvgR += pixel.R;
+                                AvgG += pixel.G;
+                                AvgB += pixel.B;
+                                AvgA += pixel.A;
+                                pixelCount++;
+                            }
+                        }
+
+                    AvgR = AvgR/pixelCount;
+                    AvgG = AvgG/pixelCount;
+                    AvgB = AvgB/pixelCount;
+                    AvgA = AvgA/pixelCount;
+                    
+                    if (AvgA >225)
+                        product[0, bY, bX].ColorValue = Color.FromArgb(AvgR, AvgG, AvgB);
+                    else    
+                        product[0, bY, bX].ColorValue = null;
                 }
             }
+
+            return product;
         }
     }
 }
